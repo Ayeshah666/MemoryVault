@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MemoryVault</title>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Chakra Petch', sans-serif;
+      background: radial-gradient(circle at top, #f1c1e1, #ebb2b2);
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(12px);
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      position: relative;
+      z-index: 1;
+    }
+    .bunny-peek {
+      position: absolute;
+      top: -90px;
+      right: 20px;
+      width: 140px;
+      z-index: 0;
+      animation: peekBounce 2.5s ease-in-out infinite;
+    }
+    @keyframes peekBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(4px); }
+    }
+
+    .bounce-shimmer {
+      animation: bounceShimmer 1.5s infinite;
+      background: linear-gradient(45deg, #ec4899, #d946ef);
+      background-size: 200% 200%;
+      transition: transform 0.3s ease;
+    }
+    .bounce-shimmer:hover {
+      transform: scale(1.05);
+      animation: shimmerBounce 1s infinite alternate;
+    }
+    @keyframes shimmerBounce {
+      0% { background-position: 0% 50%; transform: scale(1); }
+      100% { background-position: 100% 50%; transform: scale(1.05); }
+    }
+    @keyframes bounceShimmer {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+  <div class="max-w-xl w-full text-center">
+     <h1 class="text-5xl font-bold text-center mb-8 text-pink-700 animate-bounce" data-aos="fade-down">
+    💌 MemoryVault
+  </h1>
+
+    <p class="text-white-600 italic mb-8">Safely stored, beautifully yours.</p>
+
+    <div class="relative">
+      <img src="pinkbunny.png" class="bunny-peek" alt="peeking bunny" />
+      <div class="glass rounded-3xl p-6 shadow-xl">
+        <label for="message" class="block text-lg font-semibold text-pink-700">Message to Future Self</label>
+    <textarea id="message" rows="6" placeholder="Dear future me..." class="w-full p-4 rounded-lg bg-white bg-opacity-80 focus:ring-2 focus:ring-pink-400"></textarea>
+
+    <label for="unlockdate" class="block text-lg font-semibold text-pink-700">Unlock Date</label>
+    <input type="date" id="unlockdate" class="w-full p-4 rounded-lg bg-white bg-opacity-80 focus:ring-2 focus:ring-pink-400" />
+
+    <label for="password" class="block text-lg font-semibold text-pink-700">Optional Password</label>
+    <input type="password" id="password" placeholder="(optional)" class="w-full p-4 rounded-lg bg-white bg-opacity-80 focus:ring-2 focus:ring-pink-400" />
+
+        <button onclick="saveCapsule()" class="mt-4 w-full bounce-shimmer text-white px-6 py-3 rounded-full font-bold tracking-wide">
+      💾 Save to Vault
+    </button>
+      </div> <!-- correctly closes glass box -->
+</div>
+  <!-- Capsule Viewer -->
+    <div class="mt-6 slide-fade">
+    <button onclick="toggleVault()" class="bg-purple-400 text-white px-4 py-2 rounded hover:bg-purple-500 transition">🔍 View My Vaults</button>
+  </div>
+
+  <!-- Modal View -->
+  <div id="vaultModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white text-black rounded-xl p-6 w-full max-w-3xl h-[80vh] overflow-y-auto relative">
+      <button onclick="toggleVault()" class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-xl">✖</button>
+      <h2 class="text-2xl font-bold mb-4">📬 Your Capsules</h2>
+      <div id="capsuleList" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    function toggleVault() {
+      document.getElementById("vaultModal").classList.toggle("hidden");
+      viewCapsules();
+    }
+
+    function saveCapsule() {
+      const message = document.getElementById("message").value.trim();
+      const unlockDate = document.getElementById("unlockdate").value;
+      const password = document.getElementById("password").value.trim();
+      if (!message || !unlockDate) return alert("❗ Message and date required.");
+
+      const capsule = {
+        message,
+        unlockDate: new Date(unlockDate).getTime(),
+        password: password ? btoa(password) : null,
+        createdAt: Date.now(),
+      };
+
+      const capsules = JSON.parse(localStorage.getItem("memoryVault")) || [];
+      capsules.push(capsule);
+      localStorage.setItem("memoryVault", JSON.stringify(capsules));
+
+      alert("✅ Capsule saved! Come back later to open it.");
+      document.getElementById("message").value = "";
+      document.getElementById("unlockdate").value = "";
+      document.getElementById("password").value = "";
+    }
+
+    function viewCapsules() {
+      const list = document.getElementById("capsuleList");
+      const capsules = JSON.parse(localStorage.getItem("memoryVault")) || [];
+      list.innerHTML = capsules.length === 0 ? "<p class='text-gray-500 italic'>No capsules found.</p>" : "";
+
+      capsules.forEach((capsule, i) => {
+        const unlocked = Date.now() >= capsule.unlockDate;
+        const div = document.createElement("div");
+        div.className = `rounded-lg p-4 ${unlocked ? "bg-green-100" : "bg-gray-200"}`;
+        const dateStr = new Date(capsule.unlockDate).toLocaleString();
+        div.innerHTML = `
+          <div class="font-semibold text-lg">📦 Capsule ${i + 1}</div>
+          <div class="text-sm text-gray-600 mb-2">Unlock: ${dateStr}</div>
+          <button class="bg-pink-500 hover:bg-pink-600 text-white py-1 px-4 rounded-full" onclick="unlockCapsule(${i})">
+            ${unlocked ? "🔓 Open" : "🔒 Locked"}
+          </button>
+          <button onclick="deleteCapsule(${i})" class="ml-3 text-sm text-red-600 hover:text-red-800">🗑 Delete</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function unlockCapsule(i) {
+      const capsules = JSON.parse(localStorage.getItem("memoryVault")) || [];
+      const c = capsules[i];
+      if (Date.now() < c.unlockDate) return alert("⏳ Not yet unlocked!");
+
+      if (c.password) {
+        const entered = prompt("Enter password:");
+        if (btoa(entered) !== c.password) return alert("❌ Incorrect password.");
+      }
+
+      alert(`\u2728 Your message:\n\n${c.message}`);
+    }
+
+    function deleteCapsule(i) {
+      if (!confirm("Delete this capsule?")) return;
+      const capsules = JSON.parse(localStorage.getItem("memoryVault")) || [];
+      capsules.splice(i, 1);
+      localStorage.setItem("memoryVault", JSON.stringify(capsules));
+      viewCapsules();
+    }
+  </script>
+</body>
+</html>
+
+
+
+
